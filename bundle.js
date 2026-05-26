@@ -148,6 +148,14 @@
             position.z
           )
 
+          world.setRotation(
+            worldContent,
+            0,
+            0,
+            0,
+            1
+          )
+
           world.setScale(
             worldContent,
             scale,
