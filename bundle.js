@@ -1,28 +1,30 @@
 (() => {
-  "use strict";
-
-  console.log("🚀 Iniciando Motor AR Local (SLAM + Image Target)");
-
-  // Seu JSON original do marker.json
+  // 1. Configuração dos módulos internos e injeção do Image Target + SLAM
   var e = {
     574(e, a, t) {
       const r = () => {
-        console.log("📍 Configurando Image Target e SLAM...");
-        // Força a ativação do SLAM na engine local junto com o Image Target
+        console.log("📍 Inicializando Sistema Híbrido: Image Target + SLAM...");
+        
+        // Dados do seu marcador original (marker.json)
+        const myImageTarget = {
+          "type": "PLANAR",
+          "properties": { "top": 0, "left": 144, "width": 941, "height": 1254, "isRotated": false, "originalWidth": 1254, "originalHeight": 1254 },
+          "imagePath": "image-targets/marker_luminance.png",
+          "name": "marker"
+        };
+
+        // Força a ativação do SLAM (disableSlam: false) junto com o seu marcador
         XR8.XrController.configure({ 
-          imageTargetData: [t(43)],
-          disableSlam: false 
+          imageTargetData: [myImageTarget],
+          disableSlam: false
         });
       };
       window.XR8 ? r() : window.addEventListener("xrloaded", r);
-    },
-    43(e) {
-      "use strict";
-      e.exports = JSON.parse('{"type":"PLANAR","properties":{"top":0,"left":144,"width":941,"height":1254,"isRotated":false,"originalWidth":1254,"originalHeight":1254},"imagePath":"image-targets/marker_luminance.png","metadata":{"type":"PLANAR","properties":{"top":0,"left":144,"width":941,"height":1254,"isRotated":false,"originalWidth":1254,"originalHeight":1254},"imagePath":"image-targets/marker_luminance.png","metadata":null,"name":"marker","resources":{"originalImage":"marker_original.png","croppedImage":"marker_cropped.png","thumbnailImage":"marker_thumbnail.png","luminanceImage":"marker_luminance.png"},"created":1777364648883,"updated":1777366647349},"name":"marker","resources":{"originalImage":"marker_original.png","croppedImage":"marker_cropped.png","thumbnailImage":"marker_thumbnail.png","luminanceImage":"marker_luminance.png"},"created":1777364648883,"updated":1777367342718}');
     }
-  };
+  },
+  a = {};
 
-  var a = {};
+  // Gerenciador de dependências nativo
   function t(r) {
     var n = a[r];
     if (void 0 !== n) return n.exports;
@@ -30,90 +32,124 @@
     return e[r](d, d.exports, t), d.exports;
   }
 
-  let scene, camera, cube;
-  let isCubeAnchored = false;
-
-  // Módulo básico adaptado para rodar sem dependências externas da nuvem
-  const arModule = {
-    name: "ceiryu-local-module",
+  // Inicialização principal da cena e dos componentes ECS
+  (() => {
+    "use strict";
     
-    onStart: ({ canvasWidth, canvasHeight }) => {
-      console.log("✅ Câmera liberada no motor local.");
-      
-      // Tenta pegar o THREE integrado no pacote local
-      const THREE = window.THREE || (window.XR8 && XR8.Threejs ? XR8.Threejs.three() : null);
-      if (!THREE) {
-        console.error("❌ Three.js não encontrado no escopo global.");
-        return;
-      }
+    // Executa o módulo de configuração do XR8 (Target + SLAM)
+    t(574);
+    
+    let isObjectAnchored = false;
 
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(60, canvasWidth / canvasHeight, 0.01, 1000);
-      
-      const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-      cube = new THREE.Mesh(geometry, material);
-      cube.visible = false;
-      scene.add(cube);
-
-      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    },
-
-    onUpdate: ({ processCpuResult }) => {
-      if (cube && cube.visible) {
-        cube.rotation.y += 0.01;
-      }
-
-      // Sincroniza posição tridimensional da câmera caso o SLAM local responda
-      if (processCpuResult && processCpuResult.reality) {
-        const { rotation, position } = processCpuResult.reality;
-        if (rotation && position && camera) {
-          camera.position.set(position.x, position.y, position.z);
-          camera.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
-        }
-      }
-    },
-
-    // Detecção usando os eventos do pipeline local
-    onRealityImageScanning: (e) => {
-      if (e.detail.name === "marker") {
-        if (isCubeAnchored) return; // Se já fixou, não mexe mais
-
-        console.log("🎯 Logo detectado! Fixando objeto...");
-        const { position, rotation, scale } = e.detail;
+    // Registra o componente que vai controlar o comportamento do seu Cubo
+    window.ecs.registerComponent({
+      name: "example-component", // Vinculado ao seu projeto
+      add: () => {
+        console.log("🤖 Componente de persistência CeiRyu ativado.");
         
-        cube.position.set(position.x, position.y, position.z);
-        cube.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
-        cube.scale.set(scale, scale, scale);
-        
-        cube.visible = true;
-        isCubeAnchored = true; // Trava o cubo no cenário
+        // Escuta o evento global de imagem encontrada pela câmera
+        window.addEventListener('reality.imagefound', (event) => {
+          if (event.detail.name === 'marker') {
+            // Se o cubo já foi fixado no mundo uma vez, ignoramos novas leituras
+            if (isObjectAnchored) return;
+
+            console.log("🎯 Logo detectado! Posicionando e fixando o cubo padrão no cenário real...");
+            
+            // Localiza a entidade do seu Cubo Padrão (ID idêntico ao anterior) dentro da Engine ECS
+            const cubeEntity = window.ecs.application.getEntity("e35dbf9c-8de2-468e-9449-f9563e988696");
+            
+            if (cubeEntity) {
+              const { position, rotation, scale } = event.detail;
+              
+              // Define a posição tridimensional do cubo baseada no marcador
+              cubeEntity.position.set(position.x, position.y, position.z);
+              cubeEntity.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+              
+              // Define uma escala padrão visível para o cubo (ajuste se ficar muito grande/pequeno)
+              cubeEntity.scale.set(scale, scale, scale);
+              
+              // Ativa o cubo na cena de forma permanente
+              cubeEntity.visible = true; 
+              isObjectAnchored = true; 
+            }
+          }
+        });
+
+        // Escuta o evento de perda do marcador
+        window.addEventListener('reality.imagelost', (event) => {
+          if (event.detail.name === 'marker') {
+            // O marcador sumiu, mas mantemos o cubo visível no mundo via SLAM
+            console.log("📍 O logo saiu de vista, mas o cubo padrão permanece fixo no espaço.");
+          }
+        });
       }
-    },
+    });
 
-    onRealityImageLost: (e) => {
-      if (e.detail.name === "marker") {
-        // Ignoramos o sumiço para manter o cubo persistente na tela
-        console.log("📍 Marcador perdido, mas objeto mantido via SLAM.");
-      }
-    }
-  };
-
-  const init = () => {
-    if (window.XR8) {
-      XR8.addCameraPipelineModule(XR8.GlTextureRenderer.pipelineModule());
-      if (XR8.Threejs) XR8.addCameraPipelineModule(XR8.Threejs.pipelineModule());
-      XR8.addCameraPipelineModule(arModule);
-      console.log("📱 Inicializando módulos locais...");
-    }
-  };
-
-  if (window.XR8) {
-    init();
-  } else {
-    window.addEventListener("xrloaded", init);
-  }
-
-  t(574);
-
-})();
+    // Árvore de objetos ECS configurada com um cubo nativo (Sem GLB externo)
+    const sceneData = JSON.parse('{' +
+      '"objects": {' +
+        '"47699d9e-18a5-4f88-a4f9-b8be92e8f74a": {' +
+          '"components": {},' +
+          '"geometry": null,' +
+          '"id": "47699d9e-18a5-4f88-a4f9-b8be92e8f74a",' +
+          '"light": {"type": "ambient"},' +
+          '"material": null,' +
+          '"name": "Ambient Light",' +
+          '"position": [10, 5, 5],' +
+          '"rotation": [0, 0, 0, 1],' +
+          '"scale": [1, 1, 1],' +
+          '"parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",' +
+          '"order": 0.4038940050501252' +
+        '},' +
+        '"a608ddd9-9379-464d-966f-5d8d8674c83c": {' +
+          '"camera": {' +
+            '"type": "perspective",' +
+            '"xr": {' +
+              '"desktop": "disabled",' +
+              '"xrCameraType": "world",' +
+              '"headset": "disabled",' +
+              '"phone": "AR"' +
+            '}' +
+          '},' +
+          '"components": {' +
+            '"example-component": {}' + // Vincula os listeners à câmera do ecossistema
+          '},' +
+          '"geometry": null,' +
+          '"id": "a608ddd9-9379-464d-966f-5d8d8674c83c",' +
+          '"material": null,' +
+          '"name": "Camera",' +
+          '"position": [0, 2, 3],' +
+          '"rotation": [0.0004436887233141012, 0.9659425615285845, -0.25875089860082223, 0.0016563336561801576],' +
+          '"scale": [1, 1, 1],' +
+          '"parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",' +
+          '"order": 1.0308214152219775' +
+        '},' +
+        '"ac1989e3-3b71-49e2-a05f-e682aeb18c36": {' +
+          '"components": {},' +
+          '"geometry": null,' +
+          '"id": "ac1989e3-3b71-49e2-a05f-e682aeb18c36",' +
+          '"light": {"intensity": 1, "type": "directional"},' +
+          '"material": null,' +
+          '"name": "Directional Light",' +
+          '"position": [20, 50, 10],' +
+          '"rotation": [0, 0, 0, 1],' +
+          '"scale": [1, 1, 1],' +
+          '"parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",' +
+          '"order": 0.6644431107322474' +
+        '},' +
+        '"e35dbf9c-8de2-468e-9449-f9563e988696": {' +
+          '"id": "e35dbf9c-8de2-468e-9449-f9563e988696",' +
+          '"position": [0, 0, 0],' +
+          '"rotation": [0, 0, 0, 1],' +
+          '"scale": [1, 1, 1],' +
+          '"geometry": {"primitive": "box"},' + 
+          '"material": {"color": "#FF0000"},' + 
+          '"parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",' +
+          '"components": {},' +
+          '"name": "Default Cube",' +
+          '"visible": false,' + // Invisível até detectar o marcador pela primeira vez
+          '"order": 2.0' +
+        '}' +
+      '},' +
+      '"spaces": {' +
+        '"88453035-
