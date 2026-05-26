@@ -3,7 +3,7 @@
   var e = {
     574(e, a, t) {
       const r = () => {
-        // CORREÇÃO: Dados do seu Image Target ('marker') para ativar o escaneamento por câmera
+        // CORREÇÃO: Dados do seu Image Target cadastrados para ativar o escaneamento
         const meuMarcador = {
           "type": "PLANAR",
           "properties": { "top": 0, "left": 144, "width": 941, "height": 1254, "isRotated": false, "originalWidth": 1254, "originalHeight": 1254 },
@@ -11,20 +11,19 @@
           "name": "marker"
         };
 
-        // AJUSTE: Vincula os dados de imagem e ativa o SLAM híbrido para permitir a persistência pós-escaneamento
+        // Ativa o escaneamento do logo e liga o SLAM para persistência, seguindo o slide
         XR8.XrController.configure({ 
           imageTargetData: [meuMarcador],
           disableSlam: false 
         });
-        
-        console.log("🌍 Escaneamento de Image Target ativo com persistência SLAM habilitada!");
+        console.log("🌍 Varredura de Image Target ativada com persistência espacial!");
       };
       window.XR8 ? r() : window.addEventListener("xrloaded", r);
     }
   },
   a = {};
 
-  // Gerenciador de dependências (Webpack/Rollup minimalista)
+  // Gerenciador de dependências (Mantenho intacto)
   function t(r) {
     var n = a[r];
     if (void 0 !== n) return n.exports;
@@ -39,50 +38,47 @@
     // Executa o módulo de configuração do XR8
     t(574);
     
-    // Controle interno para travar o objeto na primeira vez que for escaneado
-    let objetoFixo = false;
+    // Controle de ancoragem para fixar o objeto no primeiro escaneamento
+    let objetoAncorado = false;
     
-    // Registra o componente padrão do projeto
-    window.ecs.registerComponent({
-      name: "example-component",
-      add: () => {
-        console.log("Component attached. Sistema pronto para varredura.");
+    // Ouvinte global seguro: captura os eventos sem quebrar as diretivas do runtime.js
+    window.addEventListener('reality.imagefound', (event) => {
+      if (event.detail.name === 'marker') {
+        if (objetoAncorado) return; // Se já fixou no mundo real, ignora novas leituras
 
-        // Monitora o momento exato em que o logo "CeiRyu" é detectado
-        window.addEventListener('reality.imagefound', (event) => {
-          if (event.detail.name === 'marker') {
-            if (objetoFixo) return; // Se já fixou no espaço físico, ignora novas leituras para evitar saltos
-
-            console.log("🎯 Logo escaneado com sucesso! Posicionando e ancorando o objeto no cenário...");
-            
-            // Localiza a entidade do seu modelo 3D pelo ID estático nativo do seu JSON original
-            const modeloAR = window.ecs.application.getEntity("e35dbf9c-8de2-468e-9449-f9563e988696");
-            if (modeloAR) {
-              const { position, rotation, scale } = event.detail;
-              
-              // Ajusta o modelo de acordo com os dados espaciais reais do marcador detectado
-              modeloAR.position.set(position.x, position.y, position.z);
-              modeloAR.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
-              modeloAR.scale.set(scale, scale, scale);
-              
-              modeloAR.visible = true; // Exibe o objeto na cena
-              objetoFixo = true;       // Ativa a ancoragem estática definitiva
-            }
-          }
-        });
-
-        // Monitora quando o papel/logo sai do campo de visão da câmera
-        window.addEventListener('reality.imagelost', (event) => {
-          if (event.detail.name === 'marker') {
-            // FIXADO: Graças ao SLAM concomitante, nós simplesmente ignoramos o evento de sumiço.
-            // O motor assume os pontos do ambiente e preserva o objeto intocado no lugar onde foi gerado.
-            console.log("📍 Marcador saiu de vista. O modelo 3D continuará fixo na tela via SLAM.");
-          }
-        });
+        console.log("🎯 Logo detectado! Posicionando o modelo 3D...");
+        
+        // Localiza a entidade do seu modelo utilizando o método nativo da sua aplicação
+        const modelo3D = window.ecs.application.getEntity("e35dbf9c-8de2-468e-9449-f9563e988696");
+        if (modelo3D) {
+          const { position, rotation, scale } = event.detail;
+          
+          // Alinha o modelo com a posição real capturada pelo marcador
+          modelo3D.position.set(position.x, position.y, position.z);
+          modelo3D.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+          modelo3D.scale.set(scale, scale, scale);
+          
+          objetoAncorado = true; // Ativa a trava de persistência espacial
+        }
       }
     });
 
-    // Árvore estrutural de objetos mantida idêntica à original (Apenas alterado visible: false inicial)
+    window.addEventListener('reality.imagelost', (event) => {
+      if (event.detail.name === 'marker') {
+        // Ignoramos o sumiço do papel: o SLAM local mantém o modelo na mesma coordenada real
+        console.log("📍 Marcador saiu de vista, mas o objeto continua fixo no cenário.");
+      }
+    });
+
+    // Registra o componente padrão (Exatamente como estava no seu código original que funciona)
+    window.ecs.registerComponent({
+      name: "example-component",
+      add: () => {
+        console.log("Component attached.");
+      }
+    });
+
+    // SUA ÁRVORE ORIGINAL DE OBJETOS (100% INTACTA, SEM NENHUMA ALTERAÇÃO DE PROPRIEDADE)
     const e = JSON.parse('{' +
       '"objects": {' +
         '"47699d9e-18a5-4f88-a4f9-b8be92e8f74a": {' +
@@ -108,9 +104,7 @@
               '"phone": "AR"' +
             '}' +
           '},' +
-          '"components": {' +
-            '"example-component": {}' + // Vincula os listeners diretamente à câmera de renderização
-          '},' +
+          '"components": {},' +
           '"geometry": null,' +
           '"id": "a608ddd9-9379-464d-966f-5d8d8674c83c",' +
           '"material": null,' +
@@ -149,7 +143,6 @@
             '"loop": true' +
           '},' +
           '"name": "Untitled.glb",' +
-          '"visible": false,' + // CORREÇÃO: Começa invisível para não brotar na tela antes do escaneamento do logo
           '"order": 2.0' +
         '}' +
       '},' +
@@ -163,7 +156,7 @@
       '"entrySpaceId": "88453035-dc0f-486d-868a-8ff7c2fda864"' +
     '}');
 
-    // Limpa propriedades legadas do histórico e inicializa a aplicação ECS
+    // Inicializa a aplicação ECS original sem interferências de parser
     delete e.history,
     delete e.historyVersion,
     window.ecs.application.init(e);
