@@ -147,7 +147,6 @@
             position.y,
             position.z
           )
-          
 
           world.setScale(
             worldContent,
