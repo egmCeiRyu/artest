@@ -1,14 +1,143 @@
 <!doctype html>
-<html lang="pt">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CeiRyu AR</title>
-  
-  <script crossorigin="anonymous" src="./external/runtime/runtime.js"></script>
-  <script crossorigin="anonymous" src="./external/xr/xr.js" data-preload-chunks="slam"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Empty Project</title>
+    <meta itemprop="name" content="Empty Project">
+    <meta name="twitter:title" content="Empty Project">
+    <meta property="og:title" content="Empty Project">
+    <meta property="og:site_name" content="Empty Project">
+    <meta name="description" content="Start with a blank project.">
+    <meta itemprop="description" content="Start with a blank project.">
+    <meta property="og:description" content="Start with a blank project.">
+    <meta name="twitter:description" content="Start with a blank project.">
+    
+    <script crossorigin="anonymous" src="./external/runtime/runtime.js"></script>
+    <script crossorigin="anonymous" src="./external/xr/xr.js" async="true" data-preload-chunks="face, slam"></script>
+
+    <style>
+        body {
+            background-color: #000000;
+        }
+        
+        canvas {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        canvas.camera-ready {
+            opacity: 1 !important;
+        }
+
+        .screenshot-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            width: 70px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 5px solid #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s ease, background-color 0.2s;
+            visibility: hidden;
+        }
+
+        .screenshot-btn.camera-ready {
+            visibility: visible;
+        }
+
+        .screenshot-btn:active {
+            transform: translateX(-50%) scale(0.9);
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+    </style>
 </head>
-<body style="margin:0;padding:0;overflow:hidden;background:#000;">
-  <script src="./bundle.js"></script>
+<body>
+    <button id="screenshot" class="screenshot-btn" aria-label="写真を撮る"></button>
+
+    <script src="bundle.js"></script>
+
+    <script>
+        window.addEventListener('xrloaded', () => {
+            if (window.XR8 && XR8.canvasScreenshot) {
+                XR8.addCameraPipelineModule(XR8.canvasScreenshot().cameraPipelineModule());
+                console.log("8th Wall Screenshot module loaded.");
+            }
+
+            XR8.addCameraPipelineModule({
+                name: 'camera-ready-detector',
+                onStart: () => {
+                    setTimeout(() => {
+                        const canvas = document.querySelector('canvas');
+                        const btn = document.getElementById('screenshot');
+                        if (canvas) canvas.classList.add('camera-ready');
+                        if (btn) btn.classList.add('camera-ready');
+                    }, 300);
+                }
+            });
+        });
+
+        document.getElementById('screenshot').addEventListener('click', async () => {
+            if (typeof XR8 === 'undefined' || !XR8.canvasScreenshot) {
+                console.error("XR8 Not ready");
+                return;
+            }
+
+            try {
+                let base64Data = await XR8.canvasScreenshot().takeScreenshot();
+                
+                if (!base64Data) {
+                    throw new Error("Data empty");
+                }
+
+                let dataUrl = base64Data.startsWith('data:') ? base64Data : "data:image/jpeg;base64," + base64Data;
+                
+                // 【修正】名前を短く設定 (例: AR_Photo_452.jpg)
+                const randomNumber = Math.floor(Math.random() * 900) + 100; // 3 dígitos aleatórios (100 a 999)
+                const filename = `AR_Photo_${randomNumber}.jpg`;
+
+                try {
+                    const response = await fetch(dataUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], filename, { type: 'image/jpeg' });
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'AR Photo',
+                            text: 'ARで撮影した写真です！'
+                        });
+                        return;
+                    }
+                } catch (shareError) {
+                    console.warn("Share failed, using fallback...", shareError);
+                }
+
+                // Fallback de Download ou Popup com nome curto
+                const newWindow = window.open();
+                if (newWindow) {
+                    newWindow.document.write(`<img src="${dataUrl}" style="width:100%; height:auto;" />`);
+                    newWindow.document.title = filename;
+                } else {
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = dataUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("写真の処理中にエラーが発生しました。");
+            }
+        });
+    </script>
 </body>
 </html>
