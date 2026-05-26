@@ -43,7 +43,7 @@
 
     // Registra o componente que vai controlar o comportamento do seu Cubo
     window.ecs.registerComponent({
-      name: "example-component", // Vinculado ao seu projeto
+      name: "example-component", 
       add: () => {
         console.log("🤖 Componente de persistência CeiRyu ativado.");
         
@@ -55,7 +55,7 @@
 
             console.log("🎯 Logo detectado! Posicionando e fixando o cubo padrão no cenário real...");
             
-            // Localiza a entidade do seu Cubo Padrão (ID idêntico ao anterior) dentro da Engine ECS
+            // Localiza a entidade do seu Cubo Padrão dentro da Engine ECS
             const cubeEntity = window.ecs.application.getEntity("e35dbf9c-8de2-468e-9449-f9563e988696");
             
             if (cubeEntity) {
@@ -65,10 +65,10 @@
               cubeEntity.position.set(position.x, position.y, position.z);
               cubeEntity.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
               
-              // Define uma escala padrão visível para o cubo (ajuste se ficar muito grande/pequeno)
+              // Define a escala proporcional ao marcador
               cubeEntity.scale.set(scale, scale, scale);
               
-              // Ativa o cubo na cena de forma permanente
+              // Torna o cubo visível e ativa a trava permanente
               cubeEntity.visible = true; 
               isObjectAnchored = true; 
             }
@@ -112,7 +112,7 @@
             '}' +
           '},' +
           '"components": {' +
-            '"example-component": {}' + // Vincula os listeners à câmera do ecossistema
+            '"example-component": {}' + 
           '},' +
           '"geometry": null,' +
           '"id": "a608ddd9-9379-464d-966f-5d8d8674c83c",' +
@@ -147,9 +147,22 @@
           '"parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",' +
           '"components": {},' +
           '"name": "Default Cube",' +
-          '"visible": false,' + // Invisível até detectar o marcador pela primeira vez
+          '"visible": false,' + 
           '"order": 2.0' +
         '}' +
       '},' +
       '"spaces": {' +
-        '"88453035-
+        '"88453035-dc0f-486d-868a-8ff7c2fda864": {' +
+          '"id": "88453035-dc0f-486d-868a-8ff7c2fda864",' +
+          '"name": "Default Space",' +
+          '"activeCamera": "a608ddd9-9379-464d-966f-5d8d8674c83c"' +
+        '}' +
+      '},' +
+      '"entrySpaceId": "88453035-dc0f-486d-868a-8ff7c2fda864"' +
+    '}');
+
+    delete sceneData.history,
+    delete sceneData.historyVersion,
+    window.ecs.application.init(sceneData);
+  })();
+})();
