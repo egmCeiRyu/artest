@@ -155,10 +155,12 @@
             scale
           )
 
-          window.ecs.Hidden.remove(
-            world,
-            worldContent
-          )
+          setTimeout(() => {
+            window.ecs.Hidden.remove(
+              world,
+              worldContent
+            )
+          }, 500)
         }
       )
   }
