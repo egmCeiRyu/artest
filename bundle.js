@@ -1,9 +1,7 @@
 (() => {
   "use strict";
 
-  // =============================================
-  // 1. CONFIGURAÇÃO DO IMAGE TARGET
-  // =============================================
+  // Configuração do Image Target
   var e = {
     574(e, a, t) {
       const r = () => {
@@ -25,75 +23,58 @@
     return e[r](d, d.exports, t), d.exports;
   }
 
-  // =============================================
-  // 2. CÓDIGO DO CUBO DE TESTE
-  // =============================================
-  let cubeAnchored = false;
-
-  const hideModule = {
-    name: "hide-on-start",
-    onStart: () => {
-      console.log("🚀 Teste com Cubo iniciado");
-    }
-  };
+  let anchored = false;
 
   const anchorModule = {
-    name: "marker-anchoring",
-    listeners: [
-      {
-        event: "reality.imagefound",
-        process: ({ detail }) => {
-          if (detail.name !== "marker" || cubeAnchored) return;
+    name: "test-cube",
+    listeners: [{
+      event: "reality.imagefound",
+      process: ({ detail }) => {
+        if (detail.name !== "marker" || anchored) return;
 
-          const { scene } = XR8.Threejs.xrScene();
+        const { scene } = XR8.Threejs.xrScene();
 
-          // Cria o cubo de teste (se ainda não existir)
-          let cube = scene.getObjectByName("TestCube");
-          if (!cube) {
-            const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-            const material = new THREE.MeshPhongMaterial({ 
-              color: 0x00ff00,
-              shininess: 30 
-            });
-            cube = new THREE.Mesh(geometry, material);
-            cube.name = "TestCube";
-            scene.add(cube);
-            console.log("🟩 Cubo criado");
-          }
+        let cube = scene.getObjectByName("TestCube");
+        if (!cube) {
+          const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+          const mat = new THREE.MeshPhongMaterial({ color: 0x00ff88 });
+          cube = new THREE.Mesh(geo, mat);
+          cube.name = "TestCube";
+          scene.add(cube);
+        }
 
-          // Posiciona o cubo no marker
-          const { position } = detail;
-          cube.position.set(position.x, position.y, position.z);
-          
-          // Fix para evitar tremor
-          cube.matrixAutoUpdate = false;
-          cube.updateMatrix();
+        cube.position.set(detail.position.x, detail.position.y, detail.position.z);
+        cube.matrixAutoUpdate = false;
+        cube.updateMatrix();
+        cube.visible = true;
 
-          cube.visible = true;
-          cubeAnchored = true;
+        anchored = true;
 
-          console.log("✅ Cubo ancorado com sucesso!");
+        console.log("✅ Cubo ancorado!");
 
-          // Desativa Image Target depois de ancorar
-          XR8.XrController.configure({ imageTargetsEnabled: false });
+        // ================== DESATIVA O IMAGE TARGET ==================
+        console.log("⛔ Desativando Image Target...");
+        
+        XR8.XrController.configure({ 
+          imageTargetsEnabled: false 
+        });
+
+        // Desativa também o objeto Image Target na cena
+        const imageTargetObj = scene.getObjectByName("Image Target");
+        if (imageTargetObj) {
+          imageTargetObj.visible = false;
         }
       }
-    ]
+    }]
   };
 
-  const initPipeline = () => {
-    XR8.addCameraPipelineModule(hideModule);
+  const init = () => {
     XR8.addCameraPipelineModule(anchorModule);
-    console.log("📍 Sistema de teste com cubo carregado");
+    console.log("🧪 Bundle carregado - Aponte para o marker (Image Target será desativado após scan)");
   };
 
-  if (window.XR8) initPipeline();
-  else window.addEventListener("xrloaded", initPipeline);
+  if (window.XR8) init();
+  else window.addEventListener("xrloaded", init);
 
-  // =============================================
-  // 3. INICIALIZAÇÃO DA CENA (Mínima)
-  // =============================================
   t(574);
-
-  console.log("✅ Bundle com Cubo de Teste carregado!");
 })();
