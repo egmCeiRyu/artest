@@ -1,6 +1,8 @@
 (() => {
   "use strict";
 
+  console.log("🚀 Bundle iniciado");
+
   // Configuração do Image Target
   var e = {
     574(e, a, t) {
@@ -23,54 +25,28 @@
     return e[r](d, d.exports, t), d.exports;
   }
 
-  let anchored = false;
+  // Módulo simples
+  const testModule = {
+    name: "camera-test",
+    onStart: () => {
+      console.log("📷 onStart chamado - câmera deve estar ligando");
+    }
+  };
 
   const anchorModule = {
-    name: "test-cube",
+    name: "marker-test",
     listeners: [{
       event: "reality.imagefound",
       process: ({ detail }) => {
-        if (detail.name !== "marker" || anchored) return;
-
-        const { scene } = XR8.Threejs.xrScene();
-
-        let cube = scene.getObjectByName("TestCube");
-        if (!cube) {
-          const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-          const mat = new THREE.MeshPhongMaterial({ color: 0x00ff88 });
-          cube = new THREE.Mesh(geo, mat);
-          cube.name = "TestCube";
-          scene.add(cube);
-        }
-
-        cube.position.set(detail.position.x, detail.position.y, detail.position.z);
-        cube.matrixAutoUpdate = false;
-        cube.updateMatrix();
-        cube.visible = true;
-
-        anchored = true;
-
-        console.log("✅ Cubo ancorado!");
-
-        // ================== DESATIVA O IMAGE TARGET ==================
-        console.log("⛔ Desativando Image Target...");
-        
-        XR8.XrController.configure({ 
-          imageTargetsEnabled: false 
-        });
-
-        // Desativa também o objeto Image Target na cena
-        const imageTargetObj = scene.getObjectByName("Image Target");
-        if (imageTargetObj) {
-          imageTargetObj.visible = false;
-        }
+        console.log("✅ Marker detectado!", detail);
       }
     }]
   };
 
   const init = () => {
+    XR8.addCameraPipelineModule(testModule);
     XR8.addCameraPipelineModule(anchorModule);
-    console.log("🧪 Bundle carregado - Aponte para o marker (Image Target será desativado após scan)");
+    console.log("✅ Módulos carregados - Aponte para o marker");
   };
 
   if (window.XR8) init();
