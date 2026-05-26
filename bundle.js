@@ -3,7 +3,7 @@
   var e = {
     574(e, a, t) {
       const r = () => {
-        // CORREÇÃO: Dados do seu Image Target cadastrados para ativar o escaneamento
+        // Dados do seu Image Target para ativar o escaneamento
         const meuMarcador = {
           "type": "PLANAR",
           "properties": { "top": 0, "left": 144, "width": 941, "height": 1254, "isRotated": false, "originalWidth": 1254, "originalHeight": 1254 },
@@ -46,7 +46,7 @@
       if (event.detail.name === 'marker') {
         if (objetoAncorado) return; // Se já fixou no mundo real, ignora novas leituras
 
-        console.log("🎯 Logo detectado! Posicionando o modelo 3D...");
+        console.log("🎯 Logo detectado! Posicionando e exibindo o modelo 3D...");
         
         // Localiza a entidade do seu modelo utilizando o método nativo da sua aplicação
         const modelo3D = window.ecs.application.getEntity("e35dbf9c-8de2-468e-9449-f9563e988696");
@@ -57,6 +57,9 @@
           modelo3D.position.set(position.x, position.y, position.z);
           modelo3D.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
           modelo3D.scale.set(scale, scale, scale);
+          
+          // EXIBIÇÃO: Agora que o marcador foi lido, tornamos o objeto visível em cena
+          modelo3D.visible = true;
           
           objetoAncorado = true; // Ativa a trava de persistência espacial
         }
@@ -78,7 +81,7 @@
       }
     });
 
-    // SUA ÁRVORE ORIGINAL DE OBJETOS (100% INTACTA, SEM NENHUMA ALTERAÇÃO DE PROPRIEDADE)
+    // ÁRVORE DE OBJETOS: Adicionado "visible": false estritamente no seu modelo Untitled.glb
     const e = JSON.parse('{' +
       '"objects": {' +
         '"47699d9e-18a5-4f88-a4f9-b8be92e8f74a": {' +
@@ -142,6 +145,7 @@
             '"animationClip": "*",' +
             '"loop": true' +
           '},' +
+          '"visible": false,' + // CORREÇÃO AQUI: Garante que o modelo comece 100% invisível ao carregar a cena
           '"name": "Untitled.glb",' +
           '"order": 2.0' +
         '}' +
