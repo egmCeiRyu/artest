@@ -1,15 +1,14 @@
 <!doctype html>
-<html>
+<html lang="pt">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CeiRyu AR Test</title>
+  <title>CeiRyu AR</title>
   
-  <!-- Importante: preload slam -->
   <script crossorigin="anonymous" src="./external/runtime/runtime.js"></script>
-  <script crossorigin="anonymous" src="./external/xr/xr.js" async="true" data-preload-chunks="slam"></script>
+  <script crossorigin="anonymous" src="./external/xr/xr.js" async data-preload-chunks="slam"></script>
 </head>
-<body style="margin:0; padding:0; overflow:hidden; background:#000;">
+<body style="margin:0;padding:0;overflow:hidden;background:#000;">
   <script src="./bundle.js"></script>
 </body>
 </html>

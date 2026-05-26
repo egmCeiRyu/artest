@@ -1,13 +1,16 @@
 (() => {
   "use strict";
 
-  console.log("🚀 Bundle iniciado");
+  console.log("🚀 Bundle carregado - Versão mínima");
 
-  // Configuração do Image Target
+  // Configuração básica do Image Target
   var e = {
     574(e, a, t) {
       const r = () => {
-        XR8.XrController.configure({ imageTargetData: [t(43)] });
+        console.log("📍 Configurando Image Target...");
+        XR8.XrController.configure({ 
+          imageTargetData: [t(43)] 
+        });
       };
       window.XR8 ? r() : window.addEventListener("xrloaded", r);
     },
@@ -25,32 +28,25 @@
     return e[r](d, d.exports, t), d.exports;
   }
 
-  // Módulo simples
-  const testModule = {
-    name: "camera-test",
+  // Módulo básico
+  const basicModule = {
+    name: "basic-setup",
     onStart: () => {
-      console.log("📷 onStart chamado - câmera deve estar ligando");
+      console.log("✅ onStart chamado - 8th Wall deve pedir permissão da câmera agora");
     }
   };
 
-  const anchorModule = {
-    name: "marker-test",
-    listeners: [{
-      event: "reality.imagefound",
-      process: ({ detail }) => {
-        console.log("✅ Marker detectado!", detail);
-      }
-    }]
-  };
-
   const init = () => {
-    XR8.addCameraPipelineModule(testModule);
-    XR8.addCameraPipelineModule(anchorModule);
-    console.log("✅ Módulos carregados - Aponte para o marker");
+    XR8.addCameraPipelineModule(basicModule);
+    console.log("📱 Módulos inicializados - Aguardando permissão da câmera");
   };
 
-  if (window.XR8) init();
-  else window.addEventListener("xrloaded", init);
+  if (window.XR8) {
+    init();
+  } else {
+    window.addEventListener("xrloaded", init);
+  }
 
   t(574);
+
 })();
