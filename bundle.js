@@ -74,12 +74,95 @@
     i(574);
 
     window.ecs.registerComponent({
-      name: "example-component",
+  name: "Toggle SLAM on Found",
 
-      add: () => {
-        console.log("Component attached.");
-      }
-    });
+  schema: {
+    worldContent: window.ecs.eid,
+    imageTargetName: window.ecs.string
+  },
+
+  schemaDefaults: {
+    imageTargetName: ""
+  },
+
+  stateMachine: ({
+    world,
+    eid,
+    schemaAttribute
+  }) => {
+
+    window.ecs.defineState("default")
+      .initial()
+
+      .onEnter(() => {
+
+        const {worldContent} =
+          schemaAttribute.get(eid)
+
+        window.ecs.Camera.mutate(
+          world,
+          world.camera.getActiveEid(),
+          camera => {
+            camera.disableWorldTracking = true
+          }
+        )
+
+        window.ecs.Hidden.set(
+          world,
+          worldContent
+        )
+      })
+
+      .listen(
+        world.events.globalId,
+        "reality.imagefound",
+        event => {
+
+          const {
+            name,
+            position,
+            scale
+          } = event.data
+
+          const {
+            imageTargetName,
+            worldContent
+          } = schemaAttribute.get(eid)
+
+          if (name !== imageTargetName) {
+            return
+          }
+
+          window.ecs.Camera.mutate(
+            world,
+            world.camera.getActiveEid(),
+            camera => {
+              camera.disableWorldTracking = false
+            }
+          )
+
+          world.setPosition(
+            worldContent,
+            position.x,
+            position.y,
+            position.z
+          )
+
+          world.setScale(
+            worldContent,
+            scale,
+            scale,
+            scale
+          )
+
+          window.ecs.Hidden.remove(
+            world,
+            worldContent
+          )
+        }
+      )
+  }
+});
 
     const e = JSON.parse(`
     {
@@ -108,10 +191,25 @@
               "desktop": "disabled",
               "xrCameraType": "world",
               "headset": "disabled",
-              "phone": "AR"
+              "phone": "AR",
+              "world": {
+                "disableWorldTracking": true
+              }
             }
           },
-          "components": {},
+          "components": {
+              "toggle-slam": {
+                "id": "toggle-slam",
+                "name": "Toggle SLAM on Found",
+                "parameters": {
+                  "imageTargetName": "marker-original_original",
+                  "worldContent": {
+                    "type": "entity",
+                    "id": "e35dbf9c-8de2-468e-9449-f9563e988696"
+                  }
+                }
+              }
+            },
           "geometry": null,
           "id": "a608ddd9-9379-464d-966f-5d8d8674c83c",
           "material": null,
@@ -163,7 +261,7 @@
             0.6000000000000001,
             0.6000000000000001
           ],
-          "parentId": "a8b1716e-9954-4736-9286-0b4f26cbaf7b",
+          "parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",
           "components": {},
           "gltfModel": {
             "src": {
