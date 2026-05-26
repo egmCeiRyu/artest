@@ -137,7 +137,7 @@
             world,
             world.camera.getActiveEid(),
             camera => {
-              camera.disableWorldTracking = false
+              // camera.disableWorldTracking = false
             }
           )
 
